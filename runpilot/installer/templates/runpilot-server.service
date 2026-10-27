@@ -1,0 +1,25 @@
+[Unit]
+Description=RunPilot Control Plane
+After=network.target mysql.service mariadb.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=runpilot
+Group=runpilot
+WorkingDirectory=/opt/runpilot
+ExecStart=/opt/runpilot/bin/runpilot-server -config /etc/runpilot/server.json
+Restart=always
+RestartSec=5s
+
+# Hardening
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource Limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
