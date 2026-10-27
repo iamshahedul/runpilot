@@ -60,7 +60,7 @@ func (s *AppService) CreateApp(ownerID int64, req models.Application) (*models.A
 	// Resolve Package Limits if Package specified
 	if req.Package != "" {
 		var pRam, pCPU, pDisk string
-		var pTasks int
+		var pTasks int64
 		pErr := s.db.QueryRow(`
 			SELECT memory_max, cpu_quota, tasks_max, disk_quota
 			FROM packages
@@ -75,7 +75,7 @@ func (s *AppService) CreateApp(ownerID int64, req models.Application) (*models.A
 				req.ResourceLimits.CPUQuota = pCPU
 			}
 			if req.ResourceLimits.TasksMax <= 0 {
-				req.ResourceLimits.TasksMax = pTasks
+				req.ResourceLimits.TasksMax = int64(pTasks)
 			}
 			if req.ResourceLimits.DiskQuota == "" {
 				req.ResourceLimits.DiskQuota = pDisk
