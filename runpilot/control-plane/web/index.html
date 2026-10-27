@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RunPilot — Native Node.js & Python Application Hosting</title>
+  <link rel="stylesheet" href="css/runpilot.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234ADE80'/><path d='M30 70 L50 25 L70 70 Z' fill='%23064E3B'/></svg>">
+</head>
+<body>
+
+  <!-- ========================================================================
+       Login Screen (Shown when unauthenticated)
+       ======================================================================== -->
+  <div id="login-screen" class="modal-overlay active" style="z-index: 2000;">
+    <div class="modal-dialog" style="max-width: 400px;">
+      <div class="modal-header">
+        <div class="brand">
+          <div class="brand-icon">▲</div>
+          <span>RunPilot</span>
+        </div>
+        <span class="brand-badge">v1.0.0</span>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 13px;">
+          Developer-first Node.js & Python application hosting control panel. Native Linux processes without Docker.
+        </p>
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email Address</label>
+            <input type="email" id="login-email" class="form-control" value="admin@runpilot.local" required autofocus>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <input type="password" id="login-password" class="form-control" value="RunPilot2026!" required>
+          </div>
+          <div id="login-error" style="color: var(--error); font-size: 12px; margin-bottom: 14px; display: none;"></div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+            Sign In to RunPilot
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       Main App Layout
+       ======================================================================== -->
+  <div class="app-container" id="app-container" style="display: none;">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="#overview" class="brand">
+          <div class="brand-icon">▲</div>
+          <span>RunPilot</span>
+        </a>
+        <span class="brand-badge">v1.0.0</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Core Management</div>
+        <a class="nav-item active" data-panel="overview">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          <span>Overview</span>
+        </a>
+        <a class="nav-item" data-panel="applications">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          <span>Applications</span>
+        </a>
+        <a class="nav-item" data-panel="deployments">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>Deployments</span>
+        </a>
+        <a class="nav-item" data-panel="domains">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+          <span>Domains & SSL</span>
+        </a>
+
+        <div class="nav-section-title">Platform</div>
+        <a class="nav-item" data-panel="runtimes">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          <span>Runtime Manager</span>
+        </a>
+        <a class="nav-item" data-panel="logs">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>System & App Logs</span>
+        </a>
+        <a class="nav-item" data-panel="servers">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+          <span>Servers</span>
+        </a>
+
+        <div class="nav-section-title">Administration</div>
+        <a class="nav-item" data-panel="users">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <span>Users & Teams</span>
+        </a>
+        <a class="nav-item" data-panel="audit">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span>Audit Logs</span>
+        </a>
+        <a class="nav-item" data-panel="settings">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Settings</span>
+        </a>
+
+        <!-- Incomplete optional modules cleanly marked per spec -->
+        <div class="nav-section-title">Add-ons</div>
+        <div class="nav-item disabled" title="Modular add-on available in hosting provider extensions">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          <span>Billing Integration</span>
+          <span class="nav-tag">Optional</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-snippet">
+          <div class="user-avatar" id="current-user-avatar">A</div>
+          <div class="user-info">
+            <span class="user-name" id="current-user-email">admin@runpilot.local</span>
+            <span class="user-role" id="current-user-role">Administrator</span>
+          </div>
+        </div>
+        <button class="btn-logout" id="btn-logout" title="Sign Out">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="page-title-group">
+          <h1 class="page-title" id="page-title">Overview</h1>
+        </div>
+        <div class="topbar-actions">
+          <div class="server-status-pill">
+            <span class="status-dot"></span>
+            <span>Host Agent: <strong id="topbar-host-name">Native Linux (systemd)</strong></span>
+          </div>
+          <button class="btn btn-primary" id="btn-create-app-top">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>Create Application</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Panel Body Container -->
+      <div class="content-body">
+        
+        <!-- ==================================================================
+             Panel 1: Overview
+             ================================================================== -->
+        <section id="panel-overview" class="panel-section active">
+          <!-- Metrics Grid -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-header">Total Applications</div>
+              <div class="metric-value" id="metric-total-apps">0</div>
+              <div class="metric-sub" id="metric-running-apps">0 running • 0 stopped</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">Host CPU Usage</div>
+              <div class="metric-value" id="metric-cpu-usage">0%</div>
+              <div class="metric-sub" id="metric-cpu-cores">cgroups v2 limits active</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">Memory Utilization</div>
+              <div class="metric-value" id="metric-ram-usage">0 MB</div>
+              <div class="metric-sub" id="metric-ram-total">of 8192 MB available</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">Disk Space</div>
+              <div class="metric-value" id="metric-disk-usage">0 GB</div>
+              <div class="metric-sub" id="metric-disk-free">of 80 GB available</div>
+            </div>
+          </div>
+
+          <!-- Applications Quick Table -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Active Applications</h2>
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-overview">Refresh Status</button>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Application</th>
+                      <th>Runtime</th>
+                      <th>Git Source</th>
+                      <th>Port</th>
+                      <th>Status</th>
+                      <th>Current Release</th>
+                      <th style="text-align: right;">Quick Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-apps-table-body">
+                    <!-- Populated dynamically via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity & Audit Feed -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Recent System & Deployment Activity</h2>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>User</th>
+                      <th>Action</th>
+                      <th>Target Application</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-audit-table-body">
+                    <!-- Populated dynamically via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             Panel 2: Applications
+             ================================================================== -->
+        <section id="panel-applications" class="panel-section" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Managed Applications</h2>
+              <button class="btn btn-primary btn-sm" id="btn-create-app-sub">
+                + New Application
+              </button>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name / App ID</th>
+                      <th>Runtime</th>
+                      <th>Git Repository</th>
+                      <th>Internal Port</th>
+                      <th>Process Status</th>
+                      <th>Active Release</th>
+                      <th style="text-align: right;">Manage</th>
+                    </tr>
+                  </thead>
+                  <tbody id="apps-full-table-body">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             Panel 3: Deployments
+             ================================================================== -->
+        <section id="panel-deployments" class="panel-section" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Deployment History</h2>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Deployment ID</th>
+                      <th>Application</th>
+                      <th>Commit</th>
+                      <th>Triggered By</th>
+                      <th>Status</th>
+                      <th>Timestamp</th>
+                      <th style="text-align: right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="deployments-table-body">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             Panel 4: Domains & SSL
+             ================================================================== -->
+        <section id="panel-domains" class="panel-section" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Assigned Domains & Nginx Reverse Proxy</h2>
+              <button class="btn btn-primary btn-sm" id="btn-attach-domain-open">
+                + Attach Domain
+              </button>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Domain Name</th>
+                      <th>Mapped Application</th>
+                      <th>Upstream Target</th>
+                      <th>SSL / TLS Status</th>
+                      <th>Reverse Proxy Status</th>
+                      <th style="text-align: right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="domains-table-body">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             Panel 5: Runtime Manager
+             ================================================================== -->
+        <section id="panel-runtimes" class="panel-section" style="display: none;">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-header">Supported Ecosystems</div>
+              <div class="metric-value">Node.js & Python</div>
+              <div class="metric-sub">Native Linux systemd processes</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">Zero-PHP Compliance</div>
+              <div class="metric-value" style="color: var(--accent-green);">100% PHP-Free</div>
+              <div class="metric-sub">Zero PHP/Composer detection or dependency</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">Process Isolation</div>
+              <div class="metric-value">cgroups v2</div>
+              <div class="metric-sub">Unprivileged dedicated Unix accounts</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Runtime Specifications</h2>
+            </div>
+            <div class="card-body">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <div style="background-color: var(--bg-primary); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <span class="badge badge-success">Node.js</span>
+                    <strong>Node.js Runtime Engine</strong>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 13px; line-height: 1.8; list-style: disc inside;">
+                    <li>Supported Release Lines: <strong>18.x, 20.x, 22.x</strong></li>
+                    <li>Package Managers: <code>npm</code>, <code>pnpm</code>, <code>yarn</code></li>
+                    <li>Frameworks: Express, Fastify, NestJS, Next.js, Socket.IO</li>
+                    <li>Zero-Downtime Atomic Symlink Releases: <code>current -&gt; releases/&lt;id&gt;</code></li>
+                    <li>Executed as: <code>runpilot-app-&lt;id&gt;</code> (Unprivileged)</li>
+                  </ul>
+                </div>
+
+                <div style="background-color: var(--bg-primary); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <span class="badge badge-info">Python</span>
+                    <strong>Python Runtime Engine</strong>
+                  </div>
+                  <ul style="color: var(--text-secondary); font-size: 13px; line-height: 1.8; list-style: disc inside;">
+                    <li>Supported Release Lines: <strong>3.10, 3.11, 3.12</strong></li>
+                    <li>Package Isolation: Dedicated per-release <code>.venv</code></li>
+                    <li>Manifests: <code>requirements.txt</code>, <code>pyproject.toml</code></li>
+                    <li>WSGI & ASGI Runners: Gunicorn, Uvicorn, Django, Flask, FastAPI</li>
+                    <li>Executed as: <code>runpilot-app-&lt;id&gt;</code> (Unprivileged)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             Panel 6: Logs
+             ================================================================== -->
+        <section id="panel-logs" class="panel-section" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <h2 class="card-title">Live Process Logs (systemd journalctl)</h2>
+                <select id="log-app-select" class="form-control" style="width: 220px; padding: 4px 10px;">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <select id="log-lines-select" class="form-control" style="width: 100px; padding: 4px 10px;">
+                  <option value="50">50 lines</option>
+                  <option value="100">100 lines</option>
+                  <option value="200">200 lines</option>
+                </select>
+                <button class="btn btn-secondary btn-sm" id="btn-refresh-logs">Refresh</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding: 12px;">
+              <div class="terminal-viewer" id="live-terminal-viewer">
+                [RunPilot] Select an application to view live stream logs...
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             Panel 7: Servers
+             ================================================================== -->
+        <section id="panel-servers" class="panel-section" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Managed Linux Nodes</h2>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Server Name</th>
+                      <th>Host Address</th>
+                      <th>Status</th>
+                      <th>Init System</th>
+                      <th>Agent Version</th>
+                      <th>Resource Capacity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Primary Node</strong></td>
+                      <td>127.0.0.1 (localhost)</td>
+                      <td><span class="badge badge-success">Active</span></td>
+                      <td>systemd (PID 1)</td>
+                      <td>Host Agent v1.0.0</td>
+                      <td>4 Cores • 8192 MB RAM • cgroups v2</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             Panel 8: Users & Teams
+             ================================================================== -->
+        <section id="panel-users" class="panel-section" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Platform Users & Role-Based Access</h2>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>User ID</th>
+                      <th>Full Name</th>
+                      <th>Email Address</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Account Created</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-table-body">
+                    <tr>
+                      <td>1</td>
+                      <td>Platform Administrator</td>
+                      <td>admin@runpilot.local</td>
+                      <td><span class="badge badge-info">Administrator</span></td>
+                      <td><span class="badge badge-success">Active</span></td>
+                      <td>System Provisioned</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             Panel 9: Audit Logs
+             ================================================================== -->
+        <section id="panel-audit" class="panel-section" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Full System Audit Log</h2>
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-audit">Refresh Log</button>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Log ID</th>
+                      <th>Timestamp</th>
+                      <th>User</th>
+                      <th>Action</th>
+                      <th>Target App</th>
+                      <th>IP Address</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="full-audit-table-body">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             Panel 10: Settings
+             ================================================================== -->
+        <section id="panel-settings" class="panel-section" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">RunPilot Platform Settings</h2>
+            </div>
+            <div class="card-body">
+              <div style="max-width: 600px;">
+                <div class="form-group">
+                  <label class="form-label">Control Plane Version</label>
+                  <input type="text" class="form-control" value="RunPilot v1.0.0 (Native Process Engine)" readonly>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Process Supervisor</label>
+                  <input type="text" class="form-control" value="systemd + cgroups v2" readonly>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Reverse Proxy Engine</label>
+                  <input type="text" class="form-control" value="Nginx (Atomic Virtualhost Templates)" readonly>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Zero-PHP Compliance Verification</label>
+                  <input type="text" class="form-control" value="Strict Invariant Verified (0 PHP or Composer checks)" readonly style="color: var(--accent-green); font-weight: 600;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ========================================================================
+       Modal: Create Application
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-create-app">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Deploy New Application</h3>
+        <button class="modal-close" data-close="modal-create-app">&times;</button>
+      </div>
+      <form id="form-create-app">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="app-name">Application Name</label>
+            <input type="text" id="app-name" class="form-control" placeholder="e.g. My Express API" required>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="app-runtime-type">Runtime</label>
+              <select id="app-runtime-type" class="form-control" required>
+                <option value="nodejs">Node.js</option>
+                <option value="python">Python</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="app-runtime-version">Runtime Version</label>
+              <select id="app-runtime-version" class="form-control">
+                <option value="20.x">Node.js 20.x (LTS)</option>
+                <option value="22.x">Node.js 22.x</option>
+                <option value="18.x">Node.js 18.x</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="app-git-repo">Git Repository URL</label>
+              <input type="text" id="app-git-repo" class="form-control" placeholder="https://github.com/example/repo.git" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="app-git-branch">Branch</label>
+              <input type="text" id="app-git-branch" class="form-control" value="main" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="app-port">Internal Port</label>
+              <input type="number" id="app-port" class="form-control" value="3000" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="app-health-path">Health Check Path</label>
+              <input type="text" id="app-health-path" class="form-control" value="/">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="app-build-cmd">Build Command (Optional)</label>
+            <input type="text" id="app-build-cmd" class="form-control" placeholder="Auto-detected (e.g. npm install && npm run build)">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="app-start-cmd">Start Command</label>
+            <input type="text" id="app-start-cmd" class="form-control" placeholder="e.g. node server.js or gunicorn main:app" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="app-cpu-quota">CPU Limit (cgroups v2)</label>
+              <input type="text" id="app-cpu-quota" class="form-control" value="100%">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="app-ram-max">RAM Limit (cgroups v2)</label>
+              <input type="text" id="app-ram-max" class="form-control" value="512M">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-create-app">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Application</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       Modal: View Build & Deployment Log
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-build-log">
+    <div class="modal-dialog" style="max-width: 720px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="build-log-title">Deployment Build Output</h3>
+        <button class="modal-close" data-close="modal-build-log">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 12px;">
+        <div class="terminal-viewer" id="build-log-content">
+          Loading deployment output...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close="modal-build-log">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       Modal: Attach Domain
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-attach-domain">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Attach Custom Domain</h3>
+        <button class="modal-close" data-close="modal-attach-domain">&times;</button>
+      </div>
+      <form id="form-attach-domain">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="domain-app-id">Select Application</label>
+            <select id="domain-app-id" class="form-control" required>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="domain-name-input">Domain Name (FQDN)</label>
+            <input type="text" id="domain-name-input" class="form-control" placeholder="e.g. api.example.com" required>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted);">
+            RunPilot will automatically generate an Nginx virtual host with HTTP routing and WebSocket upgrade headers.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-attach-domain">Cancel</button>
+          <button type="submit" class="btn btn-primary">Attach & Reload Nginx</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       Modal: Environment Variables Editor
+       ======================================================================== -->
+  <div class="modal-overlay" id="modal-env-vars">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="env-modal-title">Application Environment Variables</h3>
+        <button class="modal-close" data-close="modal-env-vars">&times;</button>
+      </div>
+      <form id="form-env-vars">
+        <input type="hidden" id="env-app-id">
+        <div class="modal-body">
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+            Stored encrypted with AES-256-GCM. Injected automatically into the application's unprivileged <code>shared/.env</code> file (permissions 0600).
+          </p>
+          <div id="env-vars-container">
+            <!-- Dynamic Key-Value Rows -->
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-add-env-row" style="margin-top: 10px;">
+            + Add Variable
+          </button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close="modal-env-vars">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Variables</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- App Frontend JavaScript -->
+  <script src="js/app.js"></script>
+</body>
+</html>
