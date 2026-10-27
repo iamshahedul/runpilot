@@ -297,6 +297,37 @@ EOF
     chown -R runpilot:runpilot "${CONFIG_DIR}" "${INSTALL_PREFIX}" "${DATA_PREFIX}" "${LOG_DIR}" 2>/dev/null || true
 }
 
+configure_nginx_proxy() {
+    if [ "$ENABLE_NGINX" = true ] && command -v nginx >/dev/null 2>&1; then
+        log "Configuring Nginx reverse proxy for RunPilot Control Panel..."
+        local default_site="/etc/nginx/sites-available/default"
+        if [ -d "/etc/nginx/sites-available" ]; then
+            cat <<EOF > "$default_site"
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:${SERVER_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+            [ -d "/etc/nginx/sites-enabled" ] && ln -sf "$default_site" /etc/nginx/sites-enabled/default 2>/dev/null || true
+            nginx -t >/dev/null 2>&1 && systemctl reload nginx 2>/dev/null || true
+            log_success "Configured Nginx reverse proxy on port 80 -> ${SERVER_PORT}"
+        fi
+    fi
+}
+
 main() {
     banner
     run_preflight
@@ -304,6 +335,7 @@ main() {
     create_service_account
     generate_agent_auth_secret
     generate_config_files
+    configure_nginx_proxy
 
     echo ""
     echo -e "${GREEN}${BOLD}RunPilot installation setup completed successfully!${NC}"
